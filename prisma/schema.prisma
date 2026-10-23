@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+  password String
+
+  appointments Appointment[]
+}
+
+model Professional {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+  password String
+
+  availability         Availability[]
+  professionalServices ProfessionalService[]
+  appointments         Appointment[]
+}
+
+model Service {
+  id              String  @id @default(uuid())
+  name            String
+  description     String? @db.VarChar(500)
+  durationMinutes Int
+  price           Decimal @db.Decimal(10, 2)
+
+  professionalServices ProfessionalService[]
+  appointments         Appointment[]
+}
+
+model ProfessionalService {
+  id             String       @id @default(uuid())
+  service        Service      @relation(fields: [serviceId], references: [id])
+  serviceId      String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  professionalId String
+
+  @@unique([serviceId, professionalId])
+}
+
+model Availability {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  startAt        DateTime
+  endAt          DateTime
+}
+
+model Appointment {
+  id             String   @id @default(uuid())
+  clientId       String
+  professionalId String
+  serviceId      String
+  servicePrice   Decimal  @db.Decimal(10, 2)
+  startAt        DateTime
+  endAt          DateTime
+  status         Status   @default(SCHEDULED)
+
+  client       Client       @relation(fields: [clientId], references: [id])
+  professional Professional @relation(fields: [professionalId], references: [id])
+  service      Service      @relation(fields: [serviceId], references: [id])
+}
+
+enum Status {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
