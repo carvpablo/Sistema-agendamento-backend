@@ -373,7 +373,9 @@ export const getProfessionalAppointments = async (
     const appointment = await prisma.appointment.findMany({
       where: {
         professionalId: id,
-        status: { not: "CANCELLED" },
+      },
+      orderBy: {
+        startAt: "asc",
       },
       include: {
         professional: {
@@ -424,7 +426,21 @@ export const getProfessionalServices = async (req: Request, res: Response) => {
     const professionalServices = await prisma.professionalService.findMany({
       where: { professionalId: id },
       include: {
-        service: true,
+        service: {
+          include: {
+            professionalServices: {
+              include: {
+                professional: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 

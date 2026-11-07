@@ -160,6 +160,18 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
         .json({ error: "Unauthorized to update this appointment" });
     }
 
+    if (status === "CANCELLED") {
+      const now = new Date();
+      const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+      if (appointment.startAt.getTime() - now.getTime() <= twentyFourHoursInMs) {
+        return res.status(400).json({
+          error:
+            "Appointments can only be cancelled with more than 24 hours in advance",
+        });
+      }
+    }
+
     const data = await prisma.appointment.update({
       where: {
         id,
@@ -177,6 +189,74 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
     return res
       .status(500)
       .json({ error: "Failed to update appointment status" });
+  }
+};
+
+export const cancelAppointment = async (req: Request, res: Response) => {
+  try {
+    const resultParams = validateId.safeParse(req.params);
+    const resultUser = validateId.safeParse(req.user);
+
+    if (!resultUser.success) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    if (!resultParams.success) {
+      return res.status(400).json({ error: "Invalid Id" });
+    }
+
+    const { id } = resultParams.data;
+    const { id: userId } = resultUser.data;
+
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (
+      appointment.clientId !== userId &&
+      appointment.professionalId !== userId
+    ) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to cancel this appointment" });
+    }
+
+    if (appointment.status === "CANCELLED") {
+      return res
+        .status(400)
+        .json({ error: "Appointment is already cancelled" });
+    }
+
+    if (appointment.status === "COMPLETED") {
+      return res
+        .status(400)
+        .json({ error: "Cannot cancel a completed appointment" });
+    }
+
+    const now = new Date();
+    const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+    if (appointment.startAt.getTime() - now.getTime() <= twentyFourHoursInMs) {
+      return res.status(400).json({
+        error:
+          "Appointments can only be cancelled with more than 24 hours in advance",
+      });
+    }
+
+    const data = await prisma.appointment.update({
+      where: { id },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+
+    return res.status(200).json(data);
+  } catch {
+    return res.status(500).json({ error: "Failed to cancel appointment" });
   }
 };
 

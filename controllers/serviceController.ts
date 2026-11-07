@@ -117,7 +117,13 @@ export const getService = async (req: Request, res: Response) => {
       include: {
         professionalServices: {
           include: {
-            professional: true,
+            professional: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },

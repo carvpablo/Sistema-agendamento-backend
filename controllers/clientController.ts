@@ -113,7 +113,9 @@ export const getClientAppointments = async (req: Request, res: Response) => {
     const appointments = await prisma.appointment.findMany({
       where: {
         clientId: id,
-        status: { not: "CANCELLED" },
+      },
+      orderBy: {
+        startAt: "asc",
       },
       include: {
         professional: {
