@@ -12,11 +12,16 @@ import authRoutes from "./routes/authRoutes";
 import validateToken from "./middleware/validateToken";
 
 const app = express();
-const port = 3000;
+const port = Number(process.env.PORT) || 3000;
+
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3001")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
