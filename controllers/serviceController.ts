@@ -114,6 +114,11 @@ export const updateService = async (req: Request, res: Response) => {
 export const getService = async (req: Request, res: Response) => {
   try {
     const data = await prisma.service.findMany({
+      where: {
+        professionalServices: {
+          some: {},
+        },
+      },
       include: {
         professionalServices: {
           include: {
