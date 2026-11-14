@@ -133,31 +133,24 @@ export const deleteProfessional = async (req: Request, res: Response) => {
 export const createAvailability = async (req: Request, res: Response) => {
   try {
     const resultUser = ValidIdSchema.safeParse(req.user);
-    const result = AvailabilitySchema.safeParse(req.body);
+    const resultBody = AvailabilitySchema.safeParse(req.body);
 
     if (!resultUser.success) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    if (!result.success) {
+    if (!resultBody.success) {
       return res.status(400).json({
-        error: "Invalid input",
-        details: z.treeifyError(result.error),
+        error: resultBody.error.issues[0]?.message || "Invalid input",
       });
     }
 
-    const { id: authenticatedId } = resultUser.data;
-    const { professionalId, startAt, endAt } = result.data;
-
-    if (authenticatedId !== professionalId) {
-      return res.status(403).json({
-        error: "Forbidden: You can only create availability for yourself",
-      });
-    }
+    const { id } = resultUser.data;
+    const { startAt, endAt } = resultBody.data;
 
     const data = await prisma.availability.create({
       data: {
-        professionalId,
+        professionalId: id,
         startAt,
         endAt,
       },
@@ -182,9 +175,14 @@ export const getProfessionalAvailability = async (
 
     const { id } = result.data;
 
+    const now = new Date();
+
     const availabilities = await prisma.availability.findMany({
       where: {
         professionalId: id,
+        startAt: {
+          gt: now,
+        },
       },
       orderBy: {
         startAt: "asc",

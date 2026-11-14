@@ -2,8 +2,9 @@ import { z } from "zod";
 
 export const AvailabilitySchema = z
   .object({
-    professionalId: z.uuid("Invalid Id"),
-    startAt: z.coerce.date(),
+    startAt: z.coerce.date().refine((date) => date.getTime() > Date.now(), {
+      message: "A data de início deve ser posterior ao momento atual",
+    }),
     endAt: z.coerce.date(),
   })
   .refine((data) => data.startAt < data.endAt, {
